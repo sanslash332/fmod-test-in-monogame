@@ -20,7 +20,10 @@ namespace game1_with_fmod_wrapper
         uint ralistenerHandle;
         uint raSourceHandle;
         DSP listenerDSP;
-
+        VECTOR listenerPos = new VECTOR { x = 10, y = 0, z = -5 };
+        VECTOR listenerVel = new VECTOR { x = 0, y = 0, z = 0 };
+        VECTOR listenerForward = new VECTOR { x = 0, y = 0, z = 1 };
+        VECTOR listenerUp = new VECTOR { x = 0, y = 1, z = 0 };
 
         public Game1()
         {
@@ -37,17 +40,18 @@ namespace game1_with_fmod_wrapper
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            FMOD.Factory.System_Create(out fmod);
-            fmod.init(1024, INITFLAGS.NORMAL,(IntPtr)OUTPUTTYPE.AUTODETECT);
-            fmod.getMasterChannelGroup(out masterChannel);
-            fmod.createChannelGroup("world", out world3DChannel);
-            fmod.loadPlugin("plugins/resonanceaudio.dll", out raHandle);
-            fmod.getNestedPlugin(raHandle, 0, out ralistenerHandle);
-            fmod.getNestedPlugin(raHandle, 2, out raSourceHandle);
-            fmod.createDSPByPlugin(ralistenerHandle, out listenerDSP);
-            world3DChannel.addDSP(world3DChannel.getNumDSPs+1,listenerDSP);
+            errcheck(FMOD.Factory.System_Create(out fmod));
+            errcheck(fmod.init(1024, INITFLAGS.NORMAL, (IntPtr)OUTPUTTYPE.AUTODETECT));
+            errcheck(fmod.getMasterChannelGroup(out masterChannel));
+            errcheck(fmod.createChannelGroup("world", out world3DChannel));
+            errcheck(fmod.loadPlugin("plugins/resonanceaudio.dll", out raHandle));
 
-            
+            errcheck(fmod.getNestedPlugin(raHandle, 0, out ralistenerHandle));
+            errcheck(fmod.getNestedPlugin(raHandle, 2, out raSourceHandle));
+            errcheck(fmod.createDSPByPlugin(ralistenerHandle, out listenerDSP));
+            errcheck(world3DChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, listenerDSP));
+            errcheck(fmod.set3DNumListeners(1));
+            errcheck(fmod.set3DListenerAttributes(0, ref listenerPos, ref listenerVel, ref listenerForward, ref listenerUp));
 
 
             base.Initialize();
@@ -62,9 +66,22 @@ namespace game1_with_fmod_wrapper
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             Sound jumpsound;
-            fmod.createSound("jump.wav", MODE.LOOP_NORMAL, out jumpsound);
+            errcheck(fmod.createSound("jump.wav", MODE._3D | MODE.LOOP_NORMAL, out jumpsound));
             Channel jumpchannel;
-            fmod.playSound(jumpsound, masterChannel,paused: false,channel: out jumpchannel);
+            errcheck(fmod.playSound(jumpsound, world3DChannel, paused: true, channel: out jumpchannel));
+            errcheck(jumpchannel.setMode(MODE._3D));
+            errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
+            errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
+            
+            VECTOR pos = new VECTOR { x = 30, y = 0, z = 0 };
+            VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
+            errcheck(jumpchannel.set3DAttributes(ref pos, ref vel));
+            errcheck(jumpchannel.setPaused(false));
+
+
+
+
+
 
             // TODO: use this.Content to load your game content here
         }
@@ -76,7 +93,7 @@ namespace game1_with_fmod_wrapper
         protected override void UnloadContent()
         {
             // TODO: Unload any non ContentManager content here
-            fmod.release();
+            errcheck(fmod.release());
 
         }
 
@@ -91,7 +108,7 @@ namespace game1_with_fmod_wrapper
                 Exit();
 
             // TODO: Add your update logic here
-            fmod.update();
+            errcheck(fmod.update());
             base.Update(gameTime);
         }
 
@@ -107,5 +124,20 @@ namespace game1_with_fmod_wrapper
 
             base.Draw(gameTime);
         }
+
+        private void errcheck(RESULT fmodresult)
+        {
+            
+            if(fmodresult != RESULT.OK)
+            {
+                Console.WriteLine($"Error de fmod durante la ejecución {fmodresult}. {Error.String(fmodresult) } botando programa");
+                throw new Exception("Caída por error de fmod.");
+            }
+            else
+            {
+                Console.WriteLine(" bien ");
+            }
+        }
     }
 }
+
