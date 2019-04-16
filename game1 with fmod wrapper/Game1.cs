@@ -66,16 +66,20 @@ namespace game1_with_fmod_wrapper
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             Sound jumpsound;
-            errcheck(fmod.createSound("jump.wav", MODE._3D | MODE.LOOP_NORMAL, out jumpsound));
+            errcheck(fmod.createSound("jump.wav", MODE.LOOP_NORMAL, out jumpsound));
             Channel jumpchannel;
             errcheck(fmod.playSound(jumpsound, world3DChannel, paused: true, channel: out jumpchannel));
             errcheck(jumpchannel.setMode(MODE._3D));
             errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
+            errcheck(sourceDSP.getParameterInfo(5, out DSP_PARAMETER_DESC dspinfo));
+            
+            Console.WriteLine($"info del plugin { new string(dspinfo.name)} y {dspinfo.description }");
             errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
             
             VECTOR pos = new VECTOR { x = 30, y = 0, z = 0 };
             VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
-            errcheck(jumpchannel.set3DAttributes(ref pos, ref vel));
+            VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
+            errcheck(jumpchannel.set3DAttributes(ref pos, ref vel,ref altpan));
             errcheck(jumpchannel.setPaused(false));
 
 
