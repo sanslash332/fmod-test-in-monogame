@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using FMOD;
 using System;
+using System.Runtime.InteropServices;
 
 namespace game1_with_fmod_wrapper
 {
@@ -46,12 +47,31 @@ namespace game1_with_fmod_wrapper
             errcheck(fmod.createChannelGroup("world", out world3DChannel));
             errcheck(fmod.loadPlugin("plugins/resonanceaudio.dll", out raHandle));
 
+            errcheck(fmod.createDSPByPlugin(raHandle, out DSP raDSP));
+            errcheck(raDSP.getInfo(out string radspinfo, out uint radspversion, out int radspchannels, out int radspheight, out int radspwidth));
+            Console.WriteLine($" detalles de resonanse audio dsp: {radspinfo} {radspversion} ");
             errcheck(fmod.getNestedPlugin(raHandle, 0, out ralistenerHandle));
+            errcheck(fmod.getNestedPlugin(raHandle, 1, out uint rasoundfieldHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 2, out raSourceHandle));
             errcheck(fmod.createDSPByPlugin(ralistenerHandle, out listenerDSP));
-            errcheck(world3DChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, listenerDSP));
-            errcheck(fmod.set3DNumListeners(1));
+            
+            errcheck(listenerDSP.getInfo(out string listenerdspinfo, out uint listenerdspversion, out int listenerdspchannels, out int listenerdspheight, out int listenerdspwidth));
+            Console.WriteLine($" detalles de resonanse audio listener dsp: {listenerdspinfo} {listenerdspversion} ");
+            errcheck(fmod.createDSPByPlugin(rasoundfieldHandle, out DSP soundfieldDSP));
+
+            errcheck(soundfieldDSP.getInfo(out string soundfielddspinfo, out uint soundfielddspversion, out int soundfielddspchannels, out int soundfielddspheight, out int soundfielddspwidth));
+            Console.WriteLine($" detalles de resonanse audio soundfield dsp: {soundfielddspinfo} {soundfielddspversion} ");
+            errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
+
+            errcheck(sourceDSP.getInfo(out string sourcedspinfo, out uint sourcedspversion, out int sourcedspchannels, out int sourcedspheight, out int sourcedspwidth));
+            Console.WriteLine($" detalles de resonanse audio source dsp: {sourcedspinfo} {sourcedspversion}  {sourcedspchannels}");
+
+            errcheck(masterChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL,listenerDSP));
+            //errcheck(world3DChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, listenerDSP));
+            //errcheck(fmod.set3DNumListeners(1));
+            
             errcheck(fmod.set3DListenerAttributes(0, ref listenerPos, ref listenerVel, ref listenerForward, ref listenerUp));
+            //errcheck(masterChannel.addGroup(world3DChannel));
 
 
             base.Initialize();
@@ -68,18 +88,52 @@ namespace game1_with_fmod_wrapper
             Sound jumpsound;
             errcheck(fmod.createSound("jump.wav", MODE.LOOP_NORMAL, out jumpsound));
             Channel jumpchannel;
-            errcheck(fmod.playSound(jumpsound, world3DChannel, paused: true, channel: out jumpchannel));
+            errcheck(fmod.playSound(jumpsound, masterChannel, paused: true, channel: out jumpchannel));
             errcheck(jumpchannel.setMode(MODE._3D));
             errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
-            errcheck(sourceDSP.getParameterInfo(5, out DSP_PARAMETER_DESC dspinfo));
-            
-            Console.WriteLine($"info del plugin { new string(dspinfo.name)} y {dspinfo.description }");
+            errcheck(sourceDSP.getNumParameters(out int cantidadparm));
+            errcheck(sourceDSP.getInfo(out string dspname, out uint dspversion,out int dspchannels,  out int dspeight, out int dspwidth));
+            Console.WriteLine($"el plugin {dspname} versión{dspversion} tiene {cantidadparm} cantidad de parámetros. ");
+            for (int i = 0; i < cantidadparm; i++)
+            {
+                errcheck(sourceDSP.getParameterInfo(i, out DSP_PARAMETER_DESC dspinfo));
+
+                Console.WriteLine($"info del plugin { new string(dspinfo.name)} y {dspinfo.description }");
+
+            }
             errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
             
-            VECTOR pos = new VECTOR { x = 30, y = 0, z = 0 };
-            VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
+
+            VECTOR pos = new VECTOR { x = 8, y = 0, z = 0 };
+            VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
+
+            VECTOR vel = new VECTOR { x = 1, y = 0, z = 0 };
             VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
-            errcheck(jumpchannel.set3DAttributes(ref pos, ref vel,ref altpan));
+            DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
+            atr3d.absolute = new ATTRIBUTES_3D {position= pos, velocity= vel, forward= listenerForward, up=listenerUp};
+            atr3d.relative = new ATTRIBUTES_3D { position = pos, velocity = vel, forward = listenerForward, up = listenerUp };
+            byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
+            GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
+            try
+            {
+                Marshal.Copy(pinStructure.AddrOfPinnedObject(), dspdatabytes, 0, dspdatabytes.Length);
+                Console.WriteLine($" largo de los bytes {dspdatabytes.Length}");
+                errcheck(sourceDSP.setParameterData(8,dspdatabytes));
+
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Prolemas al copiar convertir los bytes {e.Message}");
+                
+            }
+            finally
+            {
+                pinStructure.Free();
+
+            }
+
+            errcheck(jumpchannel.set3DAttributes(ref pos, ref vel));
             errcheck(jumpchannel.setPaused(false));
 
 
@@ -139,7 +193,7 @@ namespace game1_with_fmod_wrapper
             }
             else
             {
-                Console.WriteLine(" bien ");
+                Console.WriteLine("bien ");
             }
         }
     }

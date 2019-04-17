@@ -49,7 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="fmod.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="fmodstudio.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
