@@ -22,7 +22,7 @@ namespace game1_with_fmod_wrapper
         uint ralistenerHandle;
         uint raSourceHandle;
         DSP listenerDSP;
-        VECTOR listenerPos = new VECTOR { x = 10, y = 0, z = -5 };
+        VECTOR listenerPos = new VECTOR { x = 0, y = 0, z = 0 };
         VECTOR listenerVel = new VECTOR { x = 0, y = 0, z = 0 };
         VECTOR listenerForward = new VECTOR { x = 0, y = 0, z = 1 };
         VECTOR listenerUp = new VECTOR { x = 0, y = 1, z = 0 };
@@ -114,14 +114,14 @@ namespace game1_with_fmod_wrapper
             errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
             
 
-            VECTOR pos = new VECTOR { x = 8, y = 0, z = 0 };
+            VECTOR pos = new VECTOR { x = 0, y = 0, z = 0 };
             VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
 
             VECTOR vel = new VECTOR { x = 1, y = 0, z = 0 };
             VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
             DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
             atr3d.absolute = new _3D_ATTRIBUTES{position= pos, velocity= vel, forward= listenerForward, up=listenerUp};
-            atr3d.relative = new _3D_ATTRIBUTES{ position = pos, velocity = vel, forward = listenerForward, up = listenerUp };
+            atr3d.relative = new _3D_ATTRIBUTES{ position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
             byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
             GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
             try
