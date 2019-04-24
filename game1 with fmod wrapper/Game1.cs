@@ -114,14 +114,17 @@ namespace game1_with_fmod_wrapper
             errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
             
 
-            VECTOR pos = new VECTOR { x = 0, y = 0, z = 0 };
+            VECTOR pos = new VECTOR { x = -10, y = -20, z = 0 };
             VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
 
-            VECTOR vel = new VECTOR { x = 1, y = 0, z = 0 };
+            VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
             VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
             DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
             atr3d.absolute = new _3D_ATTRIBUTES{position= pos, velocity= vel, forward= listenerForward, up=listenerUp};
             atr3d.relative = new _3D_ATTRIBUTES{ position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
+            errcheck(sourceDSP.setParameterFloat(2, 1.0f)); //Min distance
+            errcheck(sourceDSP.setParameterFloat(3, 100.0f)); //Max distance
+
             byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
             GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
             try
