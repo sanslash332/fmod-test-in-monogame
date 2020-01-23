@@ -18,13 +18,15 @@ namespace game1_with_fmod_wrapper
         FMOD.System fmod;
         ChannelGroup masterChannel;
         ChannelGroup world3DChannel;
+        Channel jumpchannel;
         uint raHandle;
         uint ralistenerHandle;
         uint raSourceHandle;
         DSP listenerDSP;
+        DSP sourceDSP;
         VECTOR listenerPos = new VECTOR { x = 0, y = 0, z = 0 };
         VECTOR listenerVel = new VECTOR { x = 0, y = 0, z = 0 };
-        VECTOR listenerForward = new VECTOR { x = 0, y = 0, z = 1 };
+        VECTOR listenerForward = new VECTOR { x = 1, y = 0, z = 0 };
         VECTOR listenerUp = new VECTOR { x = 0, y = 1, z = 0 };
 
         public Game1()
@@ -46,14 +48,16 @@ namespace game1_with_fmod_wrapper
             errcheck(fmod.init(1024, INITFLAGS.NORMAL, (IntPtr)OUTPUTTYPE.AUTODETECT));
             errcheck(fmod.getMasterChannelGroup(out masterChannel));
             errcheck(fmod.createChannelGroup("world", out world3DChannel));
-            errcheck(fmod.loadPlugin("plugins/resonanceaudio.dll", out raHandle));
+            //errcheck(fmod.loadPlugin("plugins/resonanceaudio.dll", out raHandle));
+            errcheck(fmod.loadPlugin("plugins/OculusSpatializerFMOD.dll", out raHandle));
+          
 
             errcheck(fmod.createDSPByPlugin(raHandle, out DSP raDSP));
             // StringBuilder radspinfo = new StringBuilder();
 
             errcheck(raDSP.getInfo(out string radspinfo, out uint radspversion, out int radspchannels, out int radspheight, out int radspwidth));
           
-            Console.WriteLine($" detalles de resonanse audio dsp: {radspinfo} {radspversion} ");
+            Console.WriteLine($" detalles de dsp: {radspinfo} {radspversion} ");
             errcheck(fmod.getNestedPlugin(raHandle, 0, out ralistenerHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 1, out uint rasoundfieldHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 2, out raSourceHandle));
@@ -74,7 +78,7 @@ namespace game1_with_fmod_wrapper
           
             Console.WriteLine($" detalles de resonanse audio source dsp: {sourcedspinfo} {sourcedspversion}  {sourcedspchannels}");
 
-            errcheck(masterChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL,listenerDSP));
+            errcheck(masterChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL,sourceDSP));
             //errcheck(world3DChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, listenerDSP));
             //errcheck(fmod.set3DNumListeners(1));
           
@@ -95,10 +99,12 @@ namespace game1_with_fmod_wrapper
             spriteBatch = new SpriteBatch(GraphicsDevice);
             Sound jumpsound;
             errcheck(fmod.createSound("jump.wav", MODE.LOOP_NORMAL, out jumpsound));
-            Channel jumpchannel;
+          
+          
             errcheck(fmod.playSound(jumpsound, masterChannel, paused: true, channel: out jumpchannel));
+          
             errcheck(jumpchannel.setMode(MODE._3D));
-            errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
+            errcheck(fmod.createDSPByPlugin(raHandle, out sourceDSP));
             errcheck(sourceDSP.getNumParameters(out int cantidadparm));
             // StringBuilder dspname = new StringBuilder();
             errcheck(sourceDSP.getInfo(out string dspname, out uint dspversion,out int dspchannels,  out int dspeight, out int dspwidth));
@@ -112,46 +118,11 @@ namespace game1_with_fmod_wrapper
 
             }
             errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
-            
 
-            VECTOR pos = new VECTOR { x = -10, y = -20, z = 0 };
-            VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
-
-            VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
-            VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
-            DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
-          
-            atr3d.absolute = new ATTRIBUTES_3D{position= pos, velocity= vel, forward= listenerForward, up=listenerUp};
-            atr3d.relative = new ATTRIBUTES_3D{ position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
-            errcheck(sourceDSP.setParameterFloat(2, 1.0f)); //Min distance
-            errcheck(sourceDSP.setParameterFloat(3, 100.0f)); //Max distance
-
-            byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
-            GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
-            try
-            {
-                Marshal.Copy(pinStructure.AddrOfPinnedObject(), dspdatabytes, 0, dspdatabytes.Length);
-                Console.WriteLine($" largo de los bytes {dspdatabytes.Length}");
-                errcheck(sourceDSP.setParameterData(8,dspdatabytes));
-
-
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Prolemas al copiar convertir los bytes {e.Message}");
-                
-            }
-            finally
-            {
-                pinStructure.Free();
-
-            }
+            setSourceParameters();
 
             //errcheck(jumpchannel.set3DAttributes(ref pos, ref vel, ref altpan));
             errcheck(jumpchannel.setPaused(false));
-
-
-
 
 
 
@@ -169,6 +140,46 @@ namespace game1_with_fmod_wrapper
 
         }
 
+        void setSourceParameters()
+        {
+            
+            
+            VECTOR pos = new VECTOR { x = 0, y = 0, z = 0 };
+            VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
+
+            VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
+            VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
+            DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
+
+            atr3d.absolute = new ATTRIBUTES_3D { position = pos, velocity = vel, forward = listenerForward, up = listenerUp };
+            atr3d.relative = new ATTRIBUTES_3D { position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
+            errcheck(sourceDSP.setParameterFloat(3, 0f)); //volumetric radiyus
+            errcheck(sourceDSP.setParameterFloat(4, 50f)); //Min distance
+            errcheck(sourceDSP.setParameterFloat(5, 2.0f)); //Max distance
+
+            byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
+            GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
+            try
+            {
+                Marshal.Copy(pinStructure.AddrOfPinnedObject(), dspdatabytes, 0, dspdatabytes.Length);
+                Console.WriteLine($" largo de los bytes {dspdatabytes.Length}");
+                errcheck(sourceDSP.setParameterData(0, dspdatabytes));
+
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Prolemas al copiar convertir los bytes {e.Message}");
+
+            }
+            finally
+            {
+                pinStructure.Free();
+
+            }
+            
+            
+        }
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
@@ -180,8 +191,31 @@ namespace game1_with_fmod_wrapper
                 Exit();
 
             // TODO: Add your update logic here
+            KeyboardState state = Keyboard.GetState();
+        foreach(Keys k in state.GetPressedKeys())
+            {
+                switch(k)
+                {
+                    case Keys.D:
+                        listenerPos.z += 0.1f;
+                        break;
+                    case Keys.A:
+                        listenerPos.z -= 0.1f;
+                        break;
+                    case Keys.P:
+                        
+                        jumpchannel.getPaused(out bool paused);
+                        jumpchannel.setPaused(!paused);
+                        break;
+
+                }
+            }
+
+            setSourceParameters();
             errcheck(fmod.update());
             base.Update(gameTime);
+            errcheck(fmod.set3DListenerAttributes(0, ref listenerPos, ref listenerVel, ref listenerForward, ref listenerUp));
+            Console.WriteLine($" POSICIÓN ACTUAL DEL LISTENER: {listenerPos.x}, {listenerPos.y} {listenerPos.z} ");
         }
 
         /// <summary>
