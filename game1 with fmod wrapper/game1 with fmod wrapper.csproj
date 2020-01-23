@@ -63,9 +63,9 @@
     <None Include="app.manifest" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\fmod wrapper v1\fmod wrapper v1.csproj">
-      <Project>{33be763d-600b-4e8a-a372-3f04ed7e84fb}</Project>
-      <Name>fmod wrapper v1</Name>
+    <ProjectReference Include="..\ClassLibrary1\fmod_wrapper.csproj">
+      <Project>{e1f74346-ff50-4d6b-80bd-4f809cde2c1e}</Project>
+      <Name>fmod_wrapper</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

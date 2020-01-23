@@ -49,35 +49,35 @@ namespace game1_with_fmod_wrapper
             errcheck(fmod.loadPlugin("plugins/resonanceaudio.dll", out raHandle));
 
             errcheck(fmod.createDSPByPlugin(raHandle, out DSP raDSP));
-            StringBuilder radspinfo = new StringBuilder();
+            // StringBuilder radspinfo = new StringBuilder();
 
-            //v2 errcheck(raDSP.getInfo(out string radspinfo, out uint radspversion, out int radspchannels, out int radspheight, out int radspwidth));
-            errcheck(raDSP.getInfo(radspinfo, out uint radspversion, out int radspchannels, out int radspheight, out int radspwidth));
+            errcheck(raDSP.getInfo(out string radspinfo, out uint radspversion, out int radspchannels, out int radspheight, out int radspwidth));
+          
             Console.WriteLine($" detalles de resonanse audio dsp: {radspinfo} {radspversion} ");
             errcheck(fmod.getNestedPlugin(raHandle, 0, out ralistenerHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 1, out uint rasoundfieldHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 2, out raSourceHandle));
             errcheck(fmod.createDSPByPlugin(ralistenerHandle, out listenerDSP));
-            StringBuilder listenerdspinfo = new StringBuilder();
-            //v2 errcheck(listenerDSP.getInfo(out string listenerdspinfo, out uint listenerdspversion, out int listenerdspchannels, out int listenerdspheight, out int listenerdspwidth));
-            errcheck(listenerDSP.getInfo(listenerdspinfo, out uint listenerdspversion, out int listenerdspchannels, out int listenerdspheight, out int listenerdspwidth));
+            // StringBuilder listenerdspinfo = new StringBuilder();
+            errcheck(listenerDSP.getInfo(out string listenerdspinfo, out uint listenerdspversion, out int listenerdspchannels, out int listenerdspheight, out int listenerdspwidth));
+          
             Console.WriteLine($" detalles de resonanse audio listener dsp: {listenerdspinfo} {listenerdspversion} ");
             errcheck(fmod.createDSPByPlugin(rasoundfieldHandle, out DSP soundfieldDSP));
-            StringBuilder soundfielddspinfo = new StringBuilder();
-            //v2 errcheck(soundfieldDSP.getInfo(out string soundfielddspinfo, out uint soundfielddspversion, out int soundfielddspchannels, out int soundfielddspheight, out int soundfielddspwidth));
-            errcheck(soundfieldDSP.getInfo(soundfielddspinfo, out uint soundfielddspversion, out int soundfielddspchannels, out int soundfielddspheight, out int soundfielddspwidth));
+            // StringBuilder soundfielddspinfo = new StringBuilder();
+            errcheck(soundfieldDSP.getInfo(out string soundfielddspinfo, out uint soundfielddspversion, out int soundfielddspchannels, out int soundfielddspheight, out int soundfielddspwidth));
+          
             Console.WriteLine($" detalles de resonanse audio soundfield dsp: {soundfielddspinfo} {soundfielddspversion} ");
             errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
-            StringBuilder sourcedspinfo = new StringBuilder();
+            // StringBuilder sourcedspinfo = new StringBuilder();
 
-            //v2 errcheck(sourceDSP.getInfo(out string sourcedspinfo, out uint sourcedspversion, out int sourcedspchannels, out int sourcedspheight, out int sourcedspwidth));
-            errcheck(sourceDSP.getInfo(sourcedspinfo, out uint sourcedspversion, out int sourcedspchannels, out int sourcedspheight, out int sourcedspwidth));
+            errcheck(sourceDSP.getInfo(out string sourcedspinfo, out uint sourcedspversion, out int sourcedspchannels, out int sourcedspheight, out int sourcedspwidth));
+          
             Console.WriteLine($" detalles de resonanse audio source dsp: {sourcedspinfo} {sourcedspversion}  {sourcedspchannels}");
 
             errcheck(masterChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL,listenerDSP));
             //errcheck(world3DChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, listenerDSP));
             //errcheck(fmod.set3DNumListeners(1));
-            
+          
             errcheck(fmod.set3DListenerAttributes(0, ref listenerPos, ref listenerVel, ref listenerForward, ref listenerUp));
             //errcheck(masterChannel.addGroup(world3DChannel));
 
@@ -100,9 +100,9 @@ namespace game1_with_fmod_wrapper
             errcheck(jumpchannel.setMode(MODE._3D));
             errcheck(fmod.createDSPByPlugin(raSourceHandle, out DSP sourceDSP));
             errcheck(sourceDSP.getNumParameters(out int cantidadparm));
-            StringBuilder dspname = new StringBuilder();
-            //v2 errcheck(sourceDSP.getInfo(out string dspname, out uint dspversion,out int dspchannels,  out int dspeight, out int dspwidth));
-            errcheck(sourceDSP.getInfo(dspname, out uint dspversion, out int dspchannels, out int dspeight, out int dspwidth));
+            // StringBuilder dspname = new StringBuilder();
+            errcheck(sourceDSP.getInfo(out string dspname, out uint dspversion,out int dspchannels,  out int dspeight, out int dspwidth));
+          
             Console.WriteLine($"el plugin {dspname} versión{dspversion} tiene {cantidadparm} cantidad de parámetros. ");
             for (int i = 0; i < cantidadparm; i++)
             {
@@ -120,8 +120,9 @@ namespace game1_with_fmod_wrapper
             VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
             VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
             DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
-            atr3d.absolute = new _3D_ATTRIBUTES{position= pos, velocity= vel, forward= listenerForward, up=listenerUp};
-            atr3d.relative = new _3D_ATTRIBUTES{ position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
+          
+            atr3d.absolute = new ATTRIBUTES_3D{position= pos, velocity= vel, forward= listenerForward, up=listenerUp};
+            atr3d.relative = new ATTRIBUTES_3D{ position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
             errcheck(sourceDSP.setParameterFloat(2, 1.0f)); //Min distance
             errcheck(sourceDSP.setParameterFloat(3, 100.0f)); //Max distance
 
@@ -146,7 +147,7 @@ namespace game1_with_fmod_wrapper
 
             }
 
-            errcheck(jumpchannel.set3DAttributes(ref pos, ref vel, ref altpan));
+            //errcheck(jumpchannel.set3DAttributes(ref pos, ref vel, ref altpan));
             errcheck(jumpchannel.setPaused(false));
 
 
