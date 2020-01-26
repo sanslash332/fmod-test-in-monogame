@@ -14,6 +14,7 @@ namespace game1_with_fmod_wrapper
     public class Game1 : Game
     {
         GraphicsDeviceManager graphics;
+        int cooldown = 0;
         SpriteBatch spriteBatch;
         FMOD.System fmod;
         ChannelGroup masterChannel;
@@ -144,7 +145,7 @@ namespace game1_with_fmod_wrapper
         {
             
             
-            VECTOR pos = new VECTOR { x = 0, y = 0, z = 0 };
+            VECTOR pos = new VECTOR { x = 0.3f, y = 0, z = 0 };
             VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
 
             VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
@@ -153,10 +154,12 @@ namespace game1_with_fmod_wrapper
 
             atr3d.absolute = new ATTRIBUTES_3D { position = pos, velocity = vel, forward = listenerForward, up = listenerUp };
             atr3d.relative = new ATTRIBUTES_3D { position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
-            errcheck(sourceDSP.setParameterFloat(3, 0f)); //volumetric radiyus
-            errcheck(sourceDSP.setParameterFloat(4, 50f)); //Min distance
-            errcheck(sourceDSP.setParameterFloat(5, 2.0f)); //Max distance
-
+            errcheck(sourceDSP.setParameterBool(1, true)); // reflections
+            errcheck(sourceDSP.setParameterBool(2, true)); // internal atenuation
+            errcheck(sourceDSP.setParameterFloat(3, 0.5f)); //volumetric radiyus
+            errcheck(sourceDSP.setParameterFloat(4, 3f)); //Min distance
+            errcheck(sourceDSP.setParameterFloat(5, 30f)); //Max distance
+            
             byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
             GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
             try
@@ -187,6 +190,10 @@ namespace game1_with_fmod_wrapper
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+            if(cooldown>0)
+            {
+                cooldown--;
+            }
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
@@ -194,13 +201,27 @@ namespace game1_with_fmod_wrapper
             KeyboardState state = Keyboard.GetState();
         foreach(Keys k in state.GetPressedKeys())
             {
+                if(cooldown>0)
+                {
+                    break;
+                }
                 switch(k)
                 {
                     case Keys.D:
                         listenerPos.z += 0.1f;
+                        cooldown = 30;
                         break;
                     case Keys.A:
                         listenerPos.z -= 0.1f;
+                        cooldown = 30;
+                        break;
+                    case Keys.W:
+                        listenerPos.x += 0.1f;
+                        cooldown = 30;
+                        break;
+                    case Keys.S:
+                        listenerPos.x -= 0.1f;
+                        cooldown = 30;
                         break;
                     case Keys.P:
                         
