@@ -13,6 +13,7 @@ namespace game1_with_fmod_wrapper
     /// </summary>
     public class Game1 : Game
     {
+
         GraphicsDeviceManager graphics;
         int cooldown = 0;
         SpriteBatch spriteBatch;
@@ -27,8 +28,10 @@ namespace game1_with_fmod_wrapper
         DSP sourceDSP;
         VECTOR listenerPos = new VECTOR { x = 0, y = 0, z = 0 };
         VECTOR listenerVel = new VECTOR { x = 0, y = 0, z = 0 };
-        VECTOR listenerForward = new VECTOR { x = 1, y = 0, z = 0 };
-        VECTOR listenerUp = new VECTOR { x = 0, y = 1, z = 0 };
+        VECTOR listenerForward = new VECTOR { x = 0, y = 0, z = 1 };
+      
+        VECTOR listenerUp = new VECTOR { x = 0, y = 1, z = 0};
+        int angulo = 0;
 
         public Game1()
         {
@@ -62,7 +65,7 @@ namespace game1_with_fmod_wrapper
             errcheck(fmod.getNestedPlugin(raHandle, 0, out ralistenerHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 1, out uint rasoundfieldHandle));
             errcheck(fmod.getNestedPlugin(raHandle, 2, out raSourceHandle));
-            errcheck(fmod.createDSPByPlugin(ralistenerHandle, out listenerDSP));
+            errcheck(fmod.createDSPByPlugin(raSourceHandle, out listenerDSP));
             // StringBuilder listenerdspinfo = new StringBuilder();
             errcheck(listenerDSP.getInfo(out string listenerdspinfo, out uint listenerdspversion, out int listenerdspchannels, out int listenerdspheight, out int listenerdspwidth));
           
@@ -79,7 +82,7 @@ namespace game1_with_fmod_wrapper
           
             Console.WriteLine($" detalles de resonanse audio source dsp: {sourcedspinfo} {sourcedspversion}  {sourcedspchannels}");
 
-            errcheck(masterChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL,sourceDSP));
+            errcheck(masterChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL,listenerDSP));
             //errcheck(world3DChannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, listenerDSP));
             //errcheck(fmod.set3DNumListeners(1));
           
@@ -104,7 +107,8 @@ namespace game1_with_fmod_wrapper
           
             errcheck(fmod.playSound(jumpsound, masterChannel, paused: true, channel: out jumpchannel));
           
-            errcheck(jumpchannel.setMode(MODE._3D));
+            //errcheck(jumpchannel.setMode(MODE._3D));
+            errcheck(jumpchannel.setChannelGroup(masterChannel));
             errcheck(fmod.createDSPByPlugin(raHandle, out sourceDSP));
             errcheck(sourceDSP.getNumParameters(out int cantidadparm));
             // StringBuilder dspname = new StringBuilder();
@@ -119,6 +123,9 @@ namespace game1_with_fmod_wrapper
 
             }
             errcheck(jumpchannel.addDSP(FMOD.CHANNELCONTROL_DSP_INDEX.TAIL, sourceDSP));
+            errcheck(listenerDSP.setParameterBool(0, false)); // activa el reflection
+            errcheck(listenerDSP.setParameterBool(1, true)); // activa el reberb
+          
 
             setSourceParameters();
 
@@ -145,21 +152,22 @@ namespace game1_with_fmod_wrapper
         {
             
             
-            VECTOR pos = new VECTOR { x = 0.3f, y = 0, z = 0 };
-            VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
+            VECTOR pos = new VECTOR { x = 1.5f, y = 0, z = 0 };
+            //VECTOR relativePos = new VECTOR { x = pos.x - listenerPos.x, y = pos.y - listenerPos.y, z = pos.z - listenerPos.z };
+             VECTOR relativePos = new VECTOR { x = 0, y= 0, z=0};
 
             VECTOR vel = new VECTOR { x = 0, y = 0, z = 0 };
             VECTOR altpan = new VECTOR { x = 0, y = 0, z = 0 };
             DSP_PARAMETER_3DATTRIBUTES atr3d = new DSP_PARAMETER_3DATTRIBUTES();
 
-            atr3d.absolute = new ATTRIBUTES_3D { position = pos, velocity = vel, forward = listenerForward, up = listenerUp };
-            atr3d.relative = new ATTRIBUTES_3D { position = relativePos, velocity = vel, forward = listenerForward, up = listenerUp };
+            atr3d.absolute = new ATTRIBUTES_3D { position = pos, velocity = vel, forward = listenerForward, up = listenerUp};
+            atr3d.relative = new ATTRIBUTES_3D { position = relativePos, velocity = vel, forward = altpan, up = altpan };
             errcheck(sourceDSP.setParameterBool(1, true)); // reflections
             errcheck(sourceDSP.setParameterBool(2, true)); // internal atenuation
-            errcheck(sourceDSP.setParameterFloat(3, 0.5f)); //volumetric radiyus
-            errcheck(sourceDSP.setParameterFloat(4, 3f)); //Min distance
-            errcheck(sourceDSP.setParameterFloat(5, 30f)); //Max distance
-            
+            errcheck(sourceDSP.setParameterFloat(3, 0.2f)); //volumetric radiyus
+            errcheck(sourceDSP.setParameterFloat(4, 0.2f)); //Min distance
+            errcheck(sourceDSP.setParameterFloat(5, 20f)); //Max distance
+          
             byte[] dspdatabytes = new byte[Marshal.SizeOf(typeof(DSP_PARAMETER_3DATTRIBUTES))];
             GCHandle pinStructure = GCHandle.Alloc(atr3d, GCHandleType.Pinned);
             try
@@ -190,6 +198,7 @@ namespace game1_with_fmod_wrapper
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Update(GameTime gameTime)
         {
+          
             if(cooldown>0)
             {
                 cooldown--;
@@ -208,20 +217,44 @@ namespace game1_with_fmod_wrapper
                 switch(k)
                 {
                     case Keys.D:
-                        listenerPos.z += 0.1f;
-                        cooldown = 30;
-                        break;
-                    case Keys.A:
-                        listenerPos.z -= 0.1f;
-                        cooldown = 30;
-                        break;
-                    case Keys.W:
                         listenerPos.x += 0.1f;
                         cooldown = 30;
                         break;
-                    case Keys.S:
+                    case Keys.A:
                         listenerPos.x -= 0.1f;
                         cooldown = 30;
+                        break;
+                    case Keys.W:
+                        listenerPos.z += 0.1f;
+                        cooldown = 30;
+                        break;
+                    case Keys.S:
+                        listenerPos.z -= 0.1f;
+                        cooldown = 30;
+                        break;
+                    case Keys.R:
+                        listenerPos.y += 0.1f;
+                        cooldown = 30;
+                        break;
+                    case Keys.F:
+                        listenerPos.y -= 0.1f;
+                        cooldown = 30;
+                        break;
+                    case Keys.X:
+                        angulo += 10;
+                        cooldown = 15;
+                        if(angulo>360)
+                        {
+                            angulo = 0;
+                        }
+                        break;
+                    case Keys.Z:
+                        angulo -= 10;
+                        cooldown = 20;
+                        if(angulo<0)
+                        {
+                            angulo = 360;
+                        }
                         break;
                     case Keys.P:
                         
@@ -232,11 +265,14 @@ namespace game1_with_fmod_wrapper
                 }
             }
 
+            listenerForward.x = (float)Math.Sin((angulo * Math.PI) / 180);
+            listenerForward.z = (float)Math.Cos((angulo * Math.PI) / 180);
+            errcheck(fmod.set3DListenerAttributes(0, ref listenerPos, ref listenerVel, ref listenerForward, ref listenerUp));
             setSourceParameters();
             errcheck(fmod.update());
             base.Update(gameTime);
-            errcheck(fmod.set3DListenerAttributes(0, ref listenerPos, ref listenerVel, ref listenerForward, ref listenerUp));
-            Console.WriteLine($" POSICIÓN ACTUAL DEL LISTENER: {listenerPos.x}, {listenerPos.y} {listenerPos.z} ");
+            
+            Console.WriteLine($" POSICIÓN ACTUAL DEL LISTENER: {listenerPos.x}, {listenerPos.y} {listenerPos.z}. Con su ángulo {angulo}");
         }
 
         /// <summary>
